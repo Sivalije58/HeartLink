@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+// @ts-expect-error - CSS modules handled internally by NextJS
 import "./globals.css";
+import NotificationWatcher from "@/components/NotificationWatcher"; // 1. Import the component.
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,6 +29,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <NotificationWatcher /> {/* 2. Put here. */}
         {children}
       </body>
     </html>
