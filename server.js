@@ -20,7 +20,7 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL
 });
 
-console.log("DATABASE_URL:", process.env.DATABASE_URL);
+
 // ───────────── API ROUTES (AUTH & USERS) ─────────────
 
 app.post("/api/login", async (req, res) => {

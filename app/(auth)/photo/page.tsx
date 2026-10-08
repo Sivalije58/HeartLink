@@ -1,14 +1,9 @@
 "use client";
 
-import React, {
-  Suspense,
-  useRef,
-  useState,
-  useEffect,
-} from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-function PhotoPageContent() {
+export default function PhotoPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -107,6 +102,7 @@ function PhotoPageContent() {
         new Date().toLocaleString()
       );
 
+      // 🔥 IMPORTANT:
       // Send the pendingToken to the server together with the photo.
       if (pendingToken) {
         formData.append("pendingToken", pendingToken);
@@ -195,19 +191,5 @@ function PhotoPageContent() {
         )}
       </div>
     </div>
-  );
-}
-
-export default function PhotoPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-[#0a0f1d] flex items-center justify-center text-white">
-          Loading...
-        </div>
-      }
-    >
-      <PhotoPageContent />
-    </Suspense>
   );
 }
