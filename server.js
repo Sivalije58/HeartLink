@@ -16,6 +16,35 @@ const wss = new WebSocketServer({ server });
 app.use(cors());
 app.use(express.json());
 
+
+
+app.get("/api/db-check", async (req, res) => {
+  try {
+    const database = await pool.query(`
+      SELECT
+        current_database() AS database_name,
+        current_schema() AS schema_name,
+        current_setting('search_path') AS search_path
+    `);
+
+    const columns = await pool.query(`
+      SELECT table_schema, column_name, data_type
+      FROM information_schema.columns
+      WHERE table_name = 'messages'
+      ORDER BY table_schema, ordinal_position
+    `);
+
+    res.json({
+      database: database.rows[0],
+      messagesColumns: columns.rows
+    });
+  } catch (error) {
+    console.error("DB check failed:", error);
+    res.status(500).json({ error: "Database check failed" });
+  }
+});
+
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL
 });
