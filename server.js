@@ -111,24 +111,76 @@ app.get("/api/messages/:room_id", async (req, res) => {
   }
 });
 
+
 // 3. Sending messages.
 app.post("/api/messages", async (req, res) => {
-  const { username, content, room_id } = req.body;
+  const username =
+    typeof req.body.username === "string"
+      ? req.body.username.trim()
+      : "";
+
+  const { content, room_id } = req.body;
+
+  if (!username || typeof content !== "string" || !content.trim()) {
+    return res.status(400).json({
+      error: "Username and content are required."
+    });
+  }
+
+  const roomId =
+    room_id == null || room_id === ""
+      ? null
+      : String(room_id);
+
   try {
-    const result = await pool.query(
-      "INSERT INTO messages (username, content, room_id) VALUES ($1, $2, $3) RETURNING *",
-      [username, content, room_id || null]
+    // Find the user in the users table.
+    const userResult = await pool.query(
+      "SELECT id FROM users WHERE username = $1 LIMIT 1",
+      [username]
     );
-    
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        error: "User not found."
+      });
+    }
+
+    const senderId = userResult.rows[0].id;
+
+    // Save the message using sender_id, not username.
+    const result = await pool.query(
+      `WITH inserted AS (
+        INSERT INTO messages (sender_id, content, room_id)
+        VALUES ($1, $2, $3)
+        RETURNING *
+      )
+      SELECT inserted.*, users.username
+      FROM inserted
+      LEFT JOIN users ON users.id = inserted.sender_id`,
+      [senderId, content.trim(), roomId]
+    );
+
+    const message = result.rows[0];
+
+    // Broadcast the new message to connected clients.
     wss.clients.forEach((client) => {
       if (client.readyState === 1) {
-        client.send(JSON.stringify({ type: "message", data: result.rows[0] }));
+        client.send(
+          JSON.stringify({
+            type: "message",
+            data: message
+          })
+        );
       }
     });
-    
-    res.json(result.rows[0]);
+
+    return res.status(201).json(message);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Error sending message:", err);
+
+    return res.status(500).json({
+      error: "Failed to save message."
+    });
   }
 });
 
